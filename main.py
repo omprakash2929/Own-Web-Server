@@ -21,33 +21,36 @@ try:
             first_header_components = headers[0].split()
             http_method = first_header_components[0]
             path = first_header_components[1]
-            
-            if path == "/":
-                try:
-                    with open("index.html", "r", encoding="utf-8") as fin:
-                        content = fin.read()
+            if http_method == 'GET':
+                if path == "/":
+                    try:
+                        with open("index.html", "r", encoding="utf-8") as fin:
+                            content = fin.read()
 
-                    response = (
-                        "HTTP/1.1 200 OK\r\n"
-                        "Content-Type: text/html; charset=utf-8\r\n"
-                        f"Content-Length: {len(content.encode('utf-8'))}\r\n"
-                        "Connection: close\r\n"
-                        "\r\n"
-                        + content
-                    )
+                        response = (
+                            "HTTP/1.1 200 OK\r\n"
+                            "Content-Type: text/html; charset=utf-8\r\n"
+                            f"Content-Length: {len(content.encode('utf-8'))}\r\n"
+                            "Connection: close\r\n"
+                            "\r\n"
+                            + content
+                        )
 
-                    client_socket.sendall(response.encode("utf-8"))
+                        client_socket.sendall(response.encode("utf-8"))
 
-                except FileNotFoundError:
-                    client_socket.sendall(
-                        b"HTTP/1.1 404 Not Found\r\n"
-                        b"Content-Type: text/plain\r\n\r\n"
-                        b"404 Not Found"
-                    )
+                    except FileNotFoundError:
+                        client_socket.sendall(
+                            b"HTTP/1.1 404 Not Found\r\n"
+                            b"Content-Type: text/plain\r\n\r\n"
+                            b"404 Not Found"
+                        )
 
-                finally:
-                    client_socket.close()
-
+                    finally:
+                        client_socket.close()
+            else:
+                response = 'HTTP/1.1 405 Method Not Allowed\n\nAllow: GET' 
+                client_socket.sendall(response.encode("utf-8"))
+                client_socket.close()
             
 except KeyboardInterrupt:
     print("\nServer stopped.")
