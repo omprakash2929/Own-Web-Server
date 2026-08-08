@@ -4,6 +4,18 @@ import threading
 SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 2300
 
+def handle_home():
+    with open('index.html', "rb") as f:
+        return f.read(), "text/html"
+    
+def handle_about():
+    with open('about.html', "rb") as f:
+        return f.read(), "text/html"
+
+def handle_contact():
+    with open("contact.html","rb") as f:
+        return f.read(), "text/html"
+
 def handle_client(client_socket, client_address):
     try:
         req = client_socket.recv(4096).decode(errors="ignore")
@@ -36,7 +48,7 @@ def handle_client(client_socket, client_address):
         print("Error:",e)
     finally:
         client_socket.close()
-
+        
 def main():
     server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
