@@ -16,6 +16,12 @@ def handle_contact():
     with open("contact.html","rb") as f:
         return f.read(), "text/html"
 
+ROUTES = {
+    "/": handle_home,
+    "/about": handle_about,
+    "/contact": handle_contact
+}
+
 def handle_client(client_socket, client_address):
     try:
         req = client_socket.recv(4096).decode(errors="ignore")
