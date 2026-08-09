@@ -28,18 +28,19 @@ def handle_client(client_socket, client_address):
         if not  req:
             return
         request_line = req.split('\r\n')[0]
-        method, path, _ = request_line.split()
+        method,path, _ = request_line.split()
         
-        if method == "GET" and path == "/":
-            with open("index.html", "rb") as f:
-                content = f.read()
-            response = (
-                b"HTTP/1.1 200 ok\r\n"
-                b"Content-Type: text/html; charset=utf-8\r\n"
-                + f"Content-Lenght: {len(content)}\r\n".encode()
-                + b"Connection: close\r\n\r\n"
-                + content
-            )
+        if method == "GET":
+            handler = ROUTES.get(path)
+            if handler:
+                content, content_type = handler()
+                response = (
+                    b"HTTP/1.1 200 ok\r\n"
+                    b"Content-Type: text/html; charset=utf-8\r\n"
+                    + f"Content-Lenght: {len(content)}\r\n".encode()
+                    + b"Connection: close\r\n\r\n"
+                    + content
+                )
         else:
             body = b"404 Not Found"
             response = (
