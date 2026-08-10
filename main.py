@@ -1,5 +1,8 @@
 import socket
 import threading
+import mimetypes
+import os
+
 
 SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 2300
@@ -9,11 +12,11 @@ def handle_home():
         return f.read(), "text/html"
     
 def handle_about():
-    with open('about.html', "rb") as f:
+    with open('webpages/about.html', "rb") as f:
         return f.read(), "text/html"
 
 def handle_contact():
-    with open("contact.html","rb") as f:
+    with open("webpages/contact.html","rb") as f:
         return f.read(), "text/html"
 
 ROUTES = {
@@ -22,40 +25,71 @@ ROUTES = {
     "/contact": handle_contact
 }
 
+
+def serve_static(path):
+    file_path = path.lstrip("/webpages/static")
+
+    if not os.path.exists(file_path):
+        return None,None
+    content_type, _ = mimetypes.guess_type(file_path)
+    if content_type is None:
+        content_type = "application/octet-stream"  
+    
+    with open(file_path, "rb") as f:
+        content = f.read()
+    
+    return content, content_type
+
 def handle_client(client_socket, client_address):
     try:
         req = client_socket.recv(4096).decode(errors="ignore")
-        if not  req:
+        if not req:
             return
+
         request_line = req.split('\r\n')[0]
-        method,path, _ = request_line.split()
-        
+        method, path, _ = request_line.split()
+
+        status_line = b"HTTP/1.1 200 OK\r\n"  # default, 404 case mein change hoga
+
         if method == "GET":
             handler = ROUTES.get(path)
             if handler:
                 content, content_type = handler()
-                response = (
-                    b"HTTP/1.1 200 ok\r\n"
-                    b"Content-Type: text/html; charset=utf-8\r\n"
-                    + f"Content-Lenght: {len(content)}\r\n".encode()
-                    + b"Connection: close\r\n\r\n"
-                    + content
-                )
-        else:
-            body = b"404 Not Found"
+            elif path.startswith("/static/"):
+                content, content_type = serve_static(path)
+                if content is None:
+                    status_line = b"HTTP/1.1 404 Not Found\r\n"
+                    content, content_type = b"404 Not Found", "text/plain"
+            else:
+                status_line = b"HTTP/1.1 404 Not Found\r\n"
+                content, content_type = b"404 Not Found", "text/plain"
+
+            # ---------- Response building (same for all cases) ----------
             response = (
-                b"HTTP/1.1 404 Not Found\r\n"
+                status_line
+                + f"Content-Type: {content_type}; charset=utf-8\r\n".encode()
+                + f"Content-Length: {len(content)}\r\n".encode()
+                + b"Connection: close\r\n\r\n"
+                + content
+            )
+
+        else:
+            body = b"405 Method Not Allowed"
+            response = (
+                b"HTTP/1.1 405 Method Not Allowed\r\n"
                 b"Content-Type: text/plain\r\n"
+                b"Allow: GET\r\n"
                 + f"Content-Length: {len(body)}\r\n".encode()
                 + b"\r\n" + body
             )
-            
+
         client_socket.sendall(response)
+
     except Exception as e:
-        print("Error:",e)
+        print("Error:", e)
     finally:
         client_socket.close()
-        
+     
 def main():
     server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
