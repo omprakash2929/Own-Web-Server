@@ -5,7 +5,7 @@ SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 2300
 
 def handle_home():
-    with open('index.html', "rb") as f:
+    with open('webpages/index.html', "rb") as f:
         return f.read(), "text/html"
     
 def handle_about():
