@@ -27,7 +27,7 @@ ROUTES = {
 
 
 def serve_static(path):
-    file_path = path.lstrip("/webpages/static")
+    file_path = path.replace("/static/", "webpages/static/", 1)
 
     if not os.path.exists(file_path):
         return None,None
