@@ -2,7 +2,7 @@ import socket
 import threading
 import mimetypes
 import os
-
+from urllib.parse import urlparse, parse_qs
 
 SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 2300
@@ -18,12 +18,26 @@ def handle_about():
 def handle_contact():
     with open("webpages/contact.html","rb") as f:
         return f.read(), "text/html"
+    
+def handle_search(query_params):
+    name = query_params.get("name", ["Guest"])[0]
+    body = f"<html><body><h1>Search results for: {name}</h1></body></html>".encode()
+    return body, "text/html"
 
 ROUTES = {
     "/": handle_home,
     "/about": handle_about,
     "/contact": handle_contact
 }
+
+ROUTES_NEEDING_QUERY = {"/search"}
+
+
+def parse_request_path(full_path):
+    parsed = urlparse(full_path)
+    clean_path = parsed.path
+    query_params = parse_qs(parsed.query)
+    return clean_path, query_params
 
 
 def serve_static(path):
@@ -47,14 +61,18 @@ def handle_client(client_socket, client_address):
             return
 
         request_line = req.split('\r\n')[0]
-        method, path, _ = request_line.split()
+        method, full_path, _ = request_line.split()
+        path, query_params = parse_request_path(full_path) 
 
-        status_line = b"HTTP/1.1 200 OK\r\n"  # default, 404 case mein change hoga
+        status_line = b"HTTP/1.1 200 OK\r\n" 
 
         if method == "GET":
             handler = ROUTES.get(path)
             if handler:
-                content, content_type = handler()
+                if path in ROUTES_NEEDING_QUERY:
+                    content, content_type = handler(query_params)  
+                else:
+                    content, content_type = handler()
             elif path.startswith("/static/"):
                 content, content_type = serve_static(path)
                 if content is None:
