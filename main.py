@@ -7,6 +7,7 @@ from urllib.parse import urlparse, parse_qs
 SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 2300
 
+
 def handle_home():
     with open('webpages/index.html', "rb") as f:
         return f.read(), "text/html"
@@ -24,13 +25,30 @@ def handle_search(query_params):
     body = f"<html><body><h1>Search results for: {name}</h1></body></html>".encode()
     return body, "text/html"
 
+#? Routes path
 ROUTES = {
     "/": handle_home,
     "/about": handle_about,
-    "/contact": handle_contact
+    "/contact": handle_contact,
+    "/search": handle_search,
 }
 
 ROUTES_NEEDING_QUERY = {"/search"}
+
+
+def parse_headers(req):
+    lines = req.split('\r\n')
+    request_line = lines[0]
+
+    headers = {}
+    i =1 
+    while i < len(lines) and lines[i] != '':
+        line = lines[i]
+        if ':' in line:
+            key, value = line.split(':',1)
+            headers[key.strip()] = value.strip()
+        i += 1
+    return request_line, headers
 
 
 def parse_request_path(full_path):
@@ -39,6 +57,7 @@ def parse_request_path(full_path):
     query_params = parse_qs(parsed.query)
     return clean_path, query_params
 
+#? Static File serve Funcation 
 
 def serve_static(path):
     file_path = path.replace("/static/", "webpages/static/", 1)
@@ -54,16 +73,19 @@ def serve_static(path):
     
     return content, content_type
 
+#! Handle Funcation 
 def handle_client(client_socket, client_address):
     try:
         req = client_socket.recv(4096).decode(errors="ignore")
         if not req:
             return
 
-        request_line = req.split('\r\n')[0]
+        request_line, headers = parse_headers(req)
         method, full_path, _ = request_line.split()
         path, query_params = parse_request_path(full_path) 
-
+        #print(f"Method: {method}, Path: {path}")
+        #print(f"Headers: {headers}")
+        
         status_line = b"HTTP/1.1 200 OK\r\n" 
 
         if method == "GET":
@@ -107,7 +129,9 @@ def handle_client(client_socket, client_address):
         print("Error:", e)
     finally:
         client_socket.close()
-     
+
+#* Main Socket Funcation
+    
 def main():
     server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
