@@ -52,6 +52,15 @@ def parse_headers_and_body(req):
 
     return request_line, headers, body
 
+def read_full_body(client_socket, initial_body, content_length):
+    body_bytes = initial_body.encode()
+    while len(body_bytes) < content_length:
+        chunk = client_socket.recv(4096)
+        if not chunk:
+            break
+        body_bytes += chunk
+    return body_bytes.decode(error="ignore")
+    
 
 def parse_headers(req):
     lines = req.split('\r\n')
@@ -66,7 +75,6 @@ def parse_headers(req):
             headers[key.strip()] = value.strip()
         i += 1
     return request_line, headers
-
 
 def parse_request_path(full_path):
     parsed = urlparse(full_path)
