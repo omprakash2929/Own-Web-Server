@@ -11,7 +11,7 @@ SERVER_PORT = 2300
 def handle_home():
     with open('webpages/index.html', "rb") as f:
         return f.read(), "text/html"
-    
+
 def handle_about():
     with open('webpages/about.html', "rb") as f:
         return f.read(), "text/html"
@@ -19,13 +19,13 @@ def handle_about():
 def handle_contact():
     with open("webpages/contact.html","rb") as f:
         return f.read(), "text/html"
-    
+
 def handle_search(query_params):
     name = query_params.get("name", ["Guest"])[0]
     body = f"<html><body><h1>Search results for: {name}</h1></body></html>".encode()
     return body, "text/html"
 
-#? Routes path
+# ? Routes path
 ROUTES = {
     "/": handle_home,
     "/about": handle_about,
@@ -34,6 +34,23 @@ ROUTES = {
 }
 
 ROUTES_NEEDING_QUERY = {"/search"}
+
+
+def parse_headers_and_body(req):
+    if '\r\n\r\n' in req:
+        head, body= req.split('\r\n\r\n',1)
+    else:
+        head, body = req, ""
+    lines = head.split('\r\n')
+    request_line = lines[0]
+
+    headers = {}
+    for line in lines[1:]:
+        if ":" in line:
+            key, value = line.split(':',1)
+            headers[key.strip()] = value.strip()
+
+    return request_line, headers, body
 
 
 def parse_headers(req):
@@ -57,7 +74,7 @@ def parse_request_path(full_path):
     query_params = parse_qs(parsed.query)
     return clean_path, query_params
 
-#? Static File serve Funcation 
+# ? Static File serve Funcation
 
 def serve_static(path):
     file_path = path.replace("/static/", "webpages/static/", 1)
@@ -73,7 +90,7 @@ def serve_static(path):
     
     return content, content_type
 
-#! Handle Funcation 
+#! Handle Funcation
 def handle_client(client_socket, client_address):
     try:
         req = client_socket.recv(4096).decode(errors="ignore")
@@ -130,8 +147,8 @@ def handle_client(client_socket, client_address):
     finally:
         client_socket.close()
 
-#* Main Socket Funcation
-    
+# * Main Socket Funcation
+
 def main():
     server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
@@ -151,4 +168,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
