@@ -2,8 +2,8 @@ import socket
 import threading
 import mimetypes
 import os
-from urllib.parse import urlparse, parse_qs,unquote
-
+from urllib.parse import urlparse, parse_qs, unquote
+from datetime import datetime, timezone
 
 SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 2300
@@ -22,6 +22,11 @@ def handle_about():
 def handle_contact():
     with open("webpages/contact.html", "rb") as f:
         return f.read(), "text/html"
+
+
+def get_http_date():
+    now = datetime.now(timezone.utc)
+    return now.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
 
 def handle_search(query_params):
@@ -85,7 +90,7 @@ def parse_headers(req):
 
 def parse_request_path(full_path):
     parsed = urlparse(full_path)
-    clean_path = unquote(parsed.path).strip()   
+    clean_path = unquote(parsed.path).strip()
     query_params = parse_qs(parsed.query)
     return clean_path, query_params
 
@@ -113,7 +118,7 @@ def handle_submit(body, headers):
 
     data = parse_qs(body)
     name = data.get("name", ["Unknown"])[0]
-    message = data.get("message", [""])[0] 
+    message = data.get("message", [""])[0]
 
     response_html = (
         f"<html><body><h1>Thanks {name}!</h1><p>Message: {message}</p></body></html>"
@@ -131,7 +136,7 @@ def handle_client(client_socket, client_address):
         request_line, headers, body = parse_headers_and_body(req)
         method, full_path, _ = request_line.split()
         path, query_params = parse_request_path(full_path)
-        print(f"DEBUG -> Method: '{method}', Path: '{path}'")
+        # print(f"DEBUG -> Method: '{method}', Path: '{path}'")
         status_line = b"HTTP/1.1 200 OK\r\n"
 
         if method == "GET":
@@ -167,17 +172,20 @@ def handle_client(client_socket, client_address):
         # ---------- Response building ----------
         response = (
             status_line
+            + f"Date: {get_http_date()}\r\n".encode()
+            + b"Server: MiniPyServer/1.0\r\n"
             + f"Content-Type: {content_type}; charset=utf-8\r\n".encode()
             + f"Content-Length: {len(content)}\r\n".encode()
             + b"Connection: close\r\n\r\n"
             + content
         )
-        client_socket.sendall(response)   
+        client_socket.sendall(response)
 
     except Exception as e:
         print("Error:", e)
     finally:
         client_socket.close()
+
 
 # * Main Socket Funcation
 
