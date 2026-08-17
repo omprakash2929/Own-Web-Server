@@ -28,6 +28,10 @@ def get_http_date():
     now = datetime.now(timezone.utc)
     return now.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
+def log_request(client_address, method, path, status_code):
+    timestamp = datetime.now().strftime("%d/%b/%Y %H:%M:%S")
+    client_ip = client_address[0]
+    print(f'{client_ip} - [{timestamp}] "{method} {path}" {status_code}')
 
 def handle_search(query_params):
     name = query_params.get("name", ["Guest"])[0]
@@ -128,6 +132,9 @@ def handle_submit(body, headers):
 
 #! Handle Funcation
 def handle_client(client_socket, client_address):
+    status_code = 200   
+    method = "-"
+    path = "-" 
     try:
         req = client_socket.recv(4096).decode(errors="ignore")
         if not req:
@@ -184,7 +191,8 @@ def handle_client(client_socket, client_address):
     except Exception as e:
         print("Error:", e)
     finally:
-        client_socket.close()
+         log_request(client_address, method, path, status_code)   
+         client_socket.close()
 
 
 # * Main Socket Funcation
