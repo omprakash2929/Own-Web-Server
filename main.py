@@ -4,9 +4,28 @@ import mimetypes
 import os
 from urllib.parse import urlparse, parse_qs, unquote
 from datetime import datetime, timezone
+import argparse
 
 SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 2300
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Mini Python Web Server")
+    parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host address to bind (default: 0.0.0.0)"
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=2300,
+        help="Port number to listen on (default: 2300)"
+    )
+    return parser.parse_args()
+    
+    
+
 
 
 def handle_home():
@@ -199,11 +218,13 @@ def handle_client(client_socket, client_address):
 
 
 def main():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind((SERVER_HOST, SERVER_PORT))
+    args = parse_args()
+    server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+    server_socket.bind((args.host, args.port))
     server_socket.listen(5)
-    print(f"listing on port {SERVER_PORT}...")
+    print(f"Listening on {args.host}:{args.port}...")    
+    
 
     try:
         while True:
